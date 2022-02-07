@@ -1,0 +1,29 @@
+name: Some workflow
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  foo:
+    name: Foo
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set env var as tag
+        shell: bash
+        run: |
+          echo "newtag=v0.1" >> $GITHUB_ENV
+      - name: Create tag
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/${{ env.newtag }}",
+              sha: context.sha
+            })
