@@ -3,6 +3,8 @@ name: Some workflow
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+    branches: [master]
 
 jobs:
   foo:
@@ -13,10 +15,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set env var as tag
-        shell: bash
-        run: |
-          echo "newtag=v0.1" >> $GITHUB_ENV
+        with:
+          fetch-depth: 0 # required for making tag detection work
+
+      - name: Get latest tag
+        id: latest-tag
+        uses: WyriHaximus/github-action-get-previous-tag@v1
+
+      - name: Get next minor version
+        id: next-tag
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.latest-tag.outputs.tag }}
+
       - name: Create tag
         uses: actions/github-script@v5
         with:
@@ -24,6 +35,6 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: "refs/tags/${{ env.newtag }}",
+              ref: 'refs/tags/${{ steps.next-tag.outputs.v_patch }}'',
               sha: context.sha
             })
